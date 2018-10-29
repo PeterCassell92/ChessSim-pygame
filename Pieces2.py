@@ -12,8 +12,8 @@ def initBoard():
     global wap, wbp, wcp, wdp, wep, wfp, wgp, whp
     global bap, bbp, bcp, bdp, bep, bfp, bgp, bhp
     global wqr, wqb, wqn, wqq, wkk, wkb, wkn, wkr
-    global bqr, bqb, bqn, bqq, bkk, bkb, bkn, bkr 
-    #initialise board dictionary (each of the 64 squares that can be occupied) 
+    global bqr, bqb, bqn, bqq, bkk, bkb, bkn, bkr
+        #initialise board dictionary (each of the 64 squares that can be occupied) 
     board= {}
 
     i=1
@@ -69,74 +69,18 @@ def initBoard():
     piecedict = [wqr, wqn, wqb, wqq, wkk, wkb, wkn, wkr, wap, wbp, wcp, wdp, wep, wfp, wgp, whp,\
                   bqr, bqn, bqb, bqq, bkk, bkb, bkn, bkr, bap, bbp, bcp, bdp, bep, bfp, bgp, bhp]
 
-def initsimBoard():
-    global simboard
-    global simpiecedict
-    global swap, swbp, swcp, swdp, swep, swfp, swgp, swhp
-    global sbap, sbbp, sbcp, sbdp, sbep, sbfp, sbgp, sbhp
-    global swqr, swqb, swqn, swqq, swkk, swkb, swkn, swkr
-    global sbqr, sbqb, sbqn, sbqq, sbkk, sbkb, sbkn, sbkr
-
-    simboard= {}
-
-    i=1
-    while i < 9:
-        j = 1
-        while j < 9:
-            
-            value = Tile(coordstoGrid(str(i), str(j)))
-         
-            simboard[coordstoGrid(str(i), str(j))] = value
-                    
-            j += 1
-        i += 1
-
-    swap=wap
-    swbp=wbp
-    swcp=wcp
-    swdp=wdp
-    swep=wep
-    swfp=wfp
-    swgp=wgp
-    swhp=whp
-    sbap=bap
-    sbbp=bbp
-    sbcp=bcp
-    sbdp=bdp
-    sbep=bep
-    sbfp=bfp
-    sbgp=bgp
-    sbhp=bhp
-    swqr=wqr
-    swqb=wqb
-    swqn=wqn
-    swqq=wqq
-    swkk=wkk
-    swkb=wkb
-    swkn=wkn
-    swkr=wkr
-    sbqr=bqr
-    sbqb=bqb
-    sbqn=bqn
-    sbqq=bqq
-    sbkk=bkk
-    sbkb=bkb
-    sbkn=bkn
-    sbkr=bkr
-
-    simpiecedict = [swqr, swqn, swqb, swqq, swkk, swkb, swkn, swkr, swap, swbp, swcp, swdp, swep, swfp, swgp, swhp,\
-                  sbqr, sbqn, sbqb, sbqq, sbkk, sbkb, sbkn, sbkr, sbap, sbbp, sbcp, sbdp, sbep, sbfp, sbgp, sbhp]
-
-
 def scoutAll():
     global whitecheck
     global blackcheck
     global wsupportedpiece
     global bsupportedpiece
+
     whitecheck = []
     blackcheck = []
     wsupportedpiece = []
     bsupportedpiece = []
+    wveccheck =[]
+    bveccheck =[]
     for piece in piecedict:
         if piece.grid != "Taken":
             piece.scoutMoves()
@@ -204,32 +148,110 @@ def scoutAll():
                         else:   
                             blackcheck.append(space)
 
-   
-    for piece in piecedict:
-        if piece.color == "W":
-            
-            for i in piece.possmoves:
-                #print i
-                if i == bkk.grid:
-                    piece.possmoves.remove(i)
-                    
-        if piece.color == "B":
-            for i in piece.possmoves:
-                #print i
-                if i == wkk.grid:
-                    piece.possmoves.remove(i)
-                    
-                 
-    #pieces cannot move into spaces occupied by a King
-
     if any(u == wkk.grid for u in blackcheck):
         print "White King in Check"
         wkk.check= True
+        dbc =[] # direct black check
+        checkers= 0
+        allwposs =[]
+        wveccheck =[]
+        for piece in piecedict:
+            if piece.color == "B": ##and piece.type != "p":
+                    for i in piece.possmoves:
+                        if i == wkk.grid:
+                            checkers +=1
+                            if piece.type != "n":
+
+                                checkvec=  map(sub, wkk.position , piece.position)
+                                checkLDV =findLDV(checkvec) #lowestdenominatorvector
+                                checksquare = piece.position
+
+                                if piece.type != "p":
+                                    m = map(add, wkk.position, checkLDV)
+                                    if 0< m[0] <=8 and 0 < m[1]  <=8:
+                                        
+                                        n= coordstoGrid(str(m[0]),str(m[1]))
+                                        if any(s== n for s in wkk.possmoves):
+                                            wveccheck.append(n)
+
+                                
+                                
+                                while checksquare != wkk.position:
+                                    dbc.append(coordstoGrid(str(checksquare[0]),str(checksquare[1])))
+                                    checksquare = map(add, checksquare , checkLDV)
+
+                                piece.possmoves.remove(i)
+                                #print dbc
+                            else:
+                                dbc.append(piece.grid)
+        for piece in piecedict:                
+            if piece.color == "W" and piece.type != "k": ##and piece.type != "p":
+                if checkers ==1:
+                    i=0
+                    while i < len(piece.possmoves) :
+                        if any(s == piece.possmoves[i] for s in dbc):
+                            allwposs.append(piece.possmoves[i])
+                            i+=1
+                        else:
+                            del piece.possmoves[i]
+                if checkers > 1:
+                    piece.possmoves =[]
+
+
+
     else:
         wkk.check = False
+
+
     if any(u== bkk.grid for u in whitecheck):
         print "Black King in Check"
         bkk.check = True
+        dwc =[]
+        checkers = 0
+        allbposs=[]
+        bveccheck=[]
+        for piece in piecedict:
+            if piece.color == "W": ##and piece.type != "p":
+                for i in piece.possmoves:
+                    if i == bkk.grid:
+                        checkers +=1
+                        if piece.type != "n":
+
+                            checkvec=  map(sub, bkk.position , piece.position)
+                            checkLDV =findLDV(checkvec) #lowestdenominatorvector
+                            checksquare = piece.position
+
+                            if piece.type != "p":
+                                    m = map(add, bkk.position, checkLDV)
+                                    if 0< m[0] <=8 and 0 < m[1]  <=8:
+                                        n= coordstoGrid(str(m[0]),str(m[1]))
+                                        
+                                        if any(s== n for s in bkk.possmoves):
+                                            bveccheck.append(n)
+                            
+                            
+                            while checksquare != bkk.position:
+                                dwc.append(coordstoGrid(str(checksquare[0]),str(checksquare[1])))
+                                checksquare = map(add, checksquare , checkLDV)
+                                
+                            piece.possmoves.remove(i)     
+                        else:
+                            dwc.append(piece.grid)          
+                        
+            if piece.color == "B" and piece.type != "k": ##and piece.type != "p":
+                if checkers ==1:
+                    i=0
+                    while i < len(piece.possmoves) :
+                        if any(s == piece.possmoves[i] for s in dwc):
+                            allbposs.append(piece.possmoves[i])
+                            i+=1
+                        else:
+                            del piece.possmoves[i]
+                if checkers > 1:
+                    piece.possmoves = []
+
+        
+
     else:
         bkk.check= False
 
@@ -238,7 +260,8 @@ def scoutAll():
     bkk.scoutMoves()
     wkk.scoutMoves()
 
-
+    whitecheck.extend(bveccheck)
+    blackcheck.extend(wveccheck)
     bkdellist = []
     for elements in bkk.possmoves:
 
@@ -268,75 +291,39 @@ def scoutAll():
     for elements in sorted(wkdellist, reverse=True):
         del wkk.possmoves[elements]
 
-#     checkfutureCheck()
-
-# def checkfutureCheck():
-#     global simboard
-#     global simpiecedict
-#     global swap, swbp, swcp, swdp, swep, swfp, swgp, swhp
-#     global sbap, sbbp, sbcp, sbdp, sbep, sbfp, sbgp, sbhp
-#     global swqr, swqb, swqn, swqq, swkk, swkb, swkn, swkr
-#     global sbqr, sbqb, sbqn, sbqq, sbkk, sbkb, sbkn, sbkr 
-#     initsimBoard()
-#     for piece in simpiecedict:
-#         for element in piece.possmoves:
-#             initsimBoard()
-#             if piece.type == "k":
-#                     if piece.color == "W":
-#                         if element == "C1" and self.hasmoved == False:
-                            
-#                             simboard["A1"].unoccupy()
-#                             swqr.position = [4,1]
-#                             simboard["D1"].occupy()
-#                             simboard["D1"].piececolor=swqr.color
-#                             simboard["D1"].pieceID=swqr.iD
-                            
-#                             swqr.hasmoved = True
-#                     if piece.color == "W":
-#                         if element == "G1" and piece.hasmoved == False:
-#                             simboard["H1"].unoccupy()
-#                             swkr.position = [6,1]
-#                             simboard["F1"].occupy()
-#                             simboard["F1"].piececolor=swkr.color
-#                             simboard["F1"].pieceID=swkr.iD
-                            
-#                             swkr.hasmoved = True
-#                     if piece.color == "B":
-#                         if element == "C8" and piece.hasmoved == False:
-#                             simboard["A8"].unoccupy()
-#                             sbqr.position = [4,8]
-#                             simboard["D8"].occupy()
-#                             simboard["D8"].piececolor=sbqr.color
-#                             simboard["D8"].pieceID=sbqr.iD
-                            
-#                             sbqr.hasmoved = True
-#                     if piece.color == "B":
-#                         if element == "G8" and piece.hasmoved == False:
-#                             simboard["H8"].unoccupy()
-#                             sbkr.position = [6,8]
-#                             simboard["F8"].occupy()
-#                             simboard["F8"].piececolor=skr.color
-#                             simboard["F8"].pieceID=skr.iD
-                            
-#                             sbkr.hasmoved = True
-#             simboard["%s" %piece.getGrid()].unoccupy()
-#             characters = string.maketrans("ABCDEFGH", "12345678")
-#             letcon = element.translate(characters)
-#             piece.position= [int(letcon[0]), int(letcon[1])]
-#             if simboard["%s" %(piece.getGrid())].occupancy == True:
-#                 for x in simpiecedict:
-#                     if x. position == piece.position and x.iD != piece.iD:
-#                         x.position = []
-#                         x.grid = "Taken"
-#                         print "%s was taken by %s" %(x.iD, piece.iD)
+    if bkk.check == True:    
+        for element in bkk.possmoves:
+            allbposs.append(element)
+        if len(allbposs) == 0:
+            print "CHECKMATE"
+            bkk.mated =True
             
-#                 simboard["%s" %(piece.getGrid())].occupy()
-#                 simboard["%s" %(piece.getGrid())].piececolor=piece.color
-#                 simboard["%s" %(piece.getGrid())].pieceID=piece.iD
-#                 piece.movevalidity = True      
+    if wkk.check == True:    
+        for element in wkk.possmoves:
+            allwposs.append(element)
+        if len(allwposs) == 0:
+            print "CHECKMATE"
+            wkk.mated = True
+
+            
+
+def findLDV(vector):
+    if vector[0] != 0 and vector[1] == 0:
+            minvector = [x / abs(vector[0]) for x in vector]
+            #print self.minvector
+           
+                
+    elif abs(vector[1]) == abs(vector[0]) and vector[1] != 0 and vector[0] !=0:
+        minvector = [x / abs(vector[1]) for x in vector]
+  
+
+    elif vector[1] != 0 and vector[0] ==0:
+        minvector = [x / abs(vector[1]) for x in vector]
+
+    return minvector
+           
 
 
-    
 
     
 def coordstoGrid(xcoordinate, ycoordinate):
@@ -446,13 +433,12 @@ class Piece(object):
                 print "%s was taken by %s" %(x.iD, self.iD)
     
     def checkObstruction(self):
-        # global wsupportedpiece
-        # global bsupportedpiece
+      
         self.obcheck = self.position
         self.obstruction = False
         if self.vector[0] != 0 and self.vector[1] == 0:
             self.minvector = [x / abs(self.vector[0]) for x in self.vector]
-            #print self.minvector
+            
             z=1
             while z <= abs(self.vector[0])-1:
                 self.obcheck= map(add, self.obcheck, self.minvector)
@@ -491,21 +477,7 @@ class Piece(object):
                 #print board["%s" %(self.checkpos)].occupancy
                 if board["%s" %(self.checkpos)].occupancy == True:
                     self.obstruction = True
-        
-        # destinationcoords = map(add, self.vector, self.position)
-        # space = coordstoGrid(str(destinationcoords[0]),str(destinationcoords[0]))
-
-
-        # if board[space].occupancy == True and board[space].piececolor == "W" and self.color == "W":
-        #     if any(t == space for t in wsupportedpiece):
-        #                     pass
-        #     else:   
-        #         wsupportedpiece.append(space)
-        # print wsupportedpiece
-
-
-        #print "Obstruction is %s" %(self.obstruction)
-        #print "\r"
+   
                 
 class Rook(Piece):
       
@@ -666,6 +638,7 @@ class Pawn(Piece):
                                             elif board['%s' %(space)].piececolor == self.color:
                                                 self.supportedpieces.append(space)  
                                            # print "Valid pawn move." # Pawn moves to " + destination 
+                                
                     j +=1
                 i +=1                  
         
@@ -839,7 +812,8 @@ class King(Piece):
         self.color = color
         self.side = "K"
         self.type = "k"
-        self.check = False        
+        self.check = False   
+        self.mated = False     
         #if self.position == NULL:
         if self.color == "W":
             self.initialposition = [5,1] 
@@ -1010,9 +984,9 @@ class Knight(Piece):
                     j +=1
                 i +=1 
 
-initBoard()
-initsimBoard()
-scoutAll()
+#initBoard()
+
+#scoutAll()
 
 
 
