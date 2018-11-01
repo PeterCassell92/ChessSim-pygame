@@ -480,8 +480,8 @@ class Piece(object):
                 self.position= [int(letcon[0]), int(letcon[1])]
                 self.confirmMove()      
         scoutAll()
-        for tile in board.items():
-            tile.ghost = False
+        #for tile in board.items():
+         #   tile.ghost = False
 
     def takePiece(self):
         for x in piecedict:

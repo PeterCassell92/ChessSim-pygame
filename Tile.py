@@ -3,6 +3,7 @@ class Tile(object):
         self.occupancy= False
         self.piececolor= "None"
         self.pieceID= "None"
+        self.ghost = False
     
     def occupy(self):
         self.occupancy = True
@@ -11,4 +12,3 @@ class Tile(object):
         self.occupancy= False
         self.piececolor= "None"
         self.pieceID="None"
-        

@@ -2,15 +2,19 @@ from operator import add
 from operator import sub
 import string
 from meld.vc.svk import NULL
-from Pieces2 import *
+from Pieces3 import initBoard, scoutAll, coordstoGrid
 from Tile import Tile
+
 
 import pygame
 import random
 
 global selected
 
+initBoard()
+scoutAll()
 
+from Pieces3 import piecedict, board, wkk, bkk
 pygame.init()
 
 white= (255,255,255)
@@ -18,12 +22,14 @@ black= (0,0,0)
 brown = (139,69,19)
 dark_brown= (111,54,10)
 dark_grey = (20,20,20)
+
 light_grey = (150,150,150)
 red = (180,0,0)
 light_red = (254,30,30)
 green = (34,155,0)
 light_green = (0,255,0)
 blue = (0,0,155)
+
 yellow = (200, 175, 0)
 light_yellow = (254, 254,0)
 display_width = 800
@@ -83,22 +89,7 @@ def gameIntro():
                         intro = False
                 if event.type == pygame.QUIT :
                     pygame.quit
-                    quit()
-
-        
-
-
-        
-        #pygame.draw.rect(gameDisplay, yellow, ((display_width*2/4-button_width/2),(5*display_height/6), button_width,button_height))
-        #pygame.draw.rect(gameDisplay, red, ((display_width*3/4-button_width/2),(5*display_height/6), button_width,button_height))
-
-                #if (display_width/4-button_width/2) + button_width >= cur[0] > (display_width/4-button_width/2)  and (5*display_height/6) + button_height >= cur[1] > (5*display_height/6):
-    #       pygame.draw.rect(gameDisplay, light_green, ((display_width/4-button_width/2),(5*display_height/6), button_width,button_height))
-        #else:
-        #   pygame.draw.rect(gameDisplay, green, ((display_width/4-button_width/2),(5*display_height/6), button_width,button_height))
-        
-
-
+                    quit() 
 
         button("Start", (display_width/4-button_width/2), (5*display_height/6), button_width, button_height, light_green, green, "Play")
         button("Controls", (display_width*2/4-button_width/2), (5*display_height/6),button_width, button_height, light_yellow, yellow)
@@ -167,6 +158,7 @@ def button(msg, x, y, width, height, activecolor, inactivecolor, action = None):
             pygame.draw.rect(gameDisplay, activecolor, (x,y, width,height))
             if click[0] == 1:
                 if action == "Play":
+                    
                     gameLoop()
                 if action == "Controls":
                     pass
@@ -183,6 +175,7 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
     global turn
     global whitecheck
     global blackcheck
+
     cur = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
     #print click
@@ -205,17 +198,17 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
                 if piece.iD == board['%s' %(selected)].pieceID:
                     piece.moveTo('%s' %(destinationselect))
 
-                    #print piece.movevalidity
+                  
             for piece in piecedict:
                 if piece.movevalidity == True:
-                    #print "Move Validated"
+                    
                     if turn == "W":
                         turn = "B"
                         piece.hasmoved = True
                     elif turn == "B":
                         turn = "W"
                         piece.hasmoved = True
-                    #print turn
+                    
                     selected = ""
                     piece.movevalidity = False
             
@@ -224,18 +217,17 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
 
 
     for piece2 in piecedict:
-        #piece2.getGrid()
-        #print piece2.grid
-        if piece2.grid == selected:
-            if any(t == coordinates for t in piece2.possmoves):
-                #print board['%s' %(coordinates)].piececolor
-                #print board['%s' %(selected)].piececolor
-                if piece2.color == "W" and board['%s' %(coordinates)].piececolor == "B" :
-                    pygame.draw.rect(gameDisplay, red, (x,y, width,height))
-                elif piece2.color == "B" and board['%s' %(coordinates)].piececolor == "W" :
-                    pygame.draw.rect(gameDisplay, red, (x,y, width,height))
-                else:
-                    pygame.draw.rect(gameDisplay, light_green, (x,y, width,height))
+        
+        if wkk.mated == False and bkk.mated == False:
+            if piece2.grid == selected:
+                if any(t == coordinates for t in piece2.possmoves):
+                   
+                    if piece2.color == "W" and board['%s' %(coordinates)].piececolor == "B" :
+                        pygame.draw.rect(gameDisplay, red, (x,y, width,height))
+                    elif piece2.color == "B" and board['%s' %(coordinates)].piececolor == "W" :
+                        pygame.draw.rect(gameDisplay, red, (x,y, width,height))
+                    else:
+                        pygame.draw.rect(gameDisplay, light_green, (x,y, width,height))
 
     if selected == coordinates:
         pygame.draw.rect(gameDisplay, yellow, (x+3,y+3, 74, 2))
@@ -283,15 +275,17 @@ def gameLoop():
     gameExit= False
     gameOver= False
 
-    #wqq.showPotential()
 
     while not gameExit:
+        
+
         if gameOver == True:
-            message_to_screen("Game Over", red, -100, "large")
-            message_to_screen(" Press C to continue or Q to quit", black, 50, "medium")
+            message_to_screen("Checkmate", red, -100, "large")
+            message_to_screen(" Press Q to quit", black, 50, "medium")
             pygame.display.update()
 
         while gameOver == True:
+
             #gameDisplay.fill(white)            
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN :
@@ -299,7 +293,11 @@ def gameLoop():
                         gameOver = False
                         gameExit = True
                     elif event.key == pygame.K_c:
-                        gameLoop()
+                        wkk.mated= False
+                        bkk.mated= False 
+                        initBoard()
+                        scoutAll()
+                        gameIntro()
                 if event.type == pygame.QUIT :
                     gameOver = False
                     gameExit = True
@@ -314,7 +312,8 @@ def gameLoop():
             if eventlog.type == pygame.KEYDOWN :
                 if event.key == pygame.K_ESCAPE:
                     pause()
-        
+        if bkk.mated== True or wkk.mated == True:
+            gameOver=True
         gameDisplay.fill(blue)
 
         i=1
@@ -343,6 +342,7 @@ def gameLoop():
         
         turndisplay(turn)
         pygame.display.update()
+
         clock.tick(FPS)
 gameIntro()
 
