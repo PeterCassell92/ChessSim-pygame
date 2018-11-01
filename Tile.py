@@ -12,4 +12,3 @@ class Tile(object):
         self.occupancy= False
         self.piececolor= "None"
         self.pieceID="None"
-        
