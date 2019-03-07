@@ -39,8 +39,6 @@ clock = pygame.time.Clock()
 
 gameDisplay = pygame.display.set_mode((display_width,display_height))
 pygame.display.set_caption('Chess')
-#icon = pygame.image.load()
-#pygame.display.set_icon(icon)
 pygame.display.update()
 
 button_width = display_width/8
@@ -143,9 +141,7 @@ def text_to_button(msg, x, y, width, height, color = black, size="small"):
     gameDisplay.blit(textSurf,textRect)
 
 def message_to_screen(msg, color,y_displace =0, size = "small"):
-    #screen_text = font.render(msg, True, color)
-    #gameDisplay.blit(screen_text, [display_width/4, display_height/2])
-    
+     
     textSurf, textRect = text_Objects(msg, color, size)
     textRect.center = (display_width/2), (display_height/2) + y_displace
     gameDisplay.blit(textSurf,textRect)
@@ -153,7 +149,6 @@ def message_to_screen(msg, color,y_displace =0, size = "small"):
 def button(msg, x, y, width, height, activecolor, inactivecolor, action = None):
     cur = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
-    #print click
     if x+width > cur[0] > x and y+height >cur[1]> y:
             pygame.draw.rect(gameDisplay, activecolor, (x,y, width,height))
             if click[0] == 1:
@@ -173,12 +168,9 @@ def button(msg, x, y, width, height, activecolor, inactivecolor, action = None):
 def square(coordinates , x, y, width, height, activecolor, inactivecolor):
     global selected
     global turn
-    global whitecheck
-    global blackcheck
 
     cur = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
-    #print click
 
     if x+width > cur[0] >= x and y+height >cur[1]>= y:
         pygame.draw.rect(gameDisplay, activecolor, (x,y, width,height))                   
@@ -190,7 +182,7 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
                         selected = coordinates
 
                         print "Selected %s" %(coordinates)
-                        #print board['%s' %(coordinates)].piececolor
+                        
         if click[2] == 1 and selected != coordinates and selected != "":
             destinationselect = coordinates
             print 
@@ -284,9 +276,7 @@ def gameLoop():
             message_to_screen(" Press Q to quit", black, 50, "medium")
             pygame.display.update()
 
-        while gameOver == True:
-
-            #gameDisplay.fill(white)            
+        while gameOver == True:        
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN :
                     if event.key == pygame.K_q:
@@ -302,11 +292,8 @@ def gameLoop():
                     gameOver = False
                     gameExit = True
 
-
-
         for event in pygame.event.get():
             eventlog = event
-           # print eventlog
             if eventlog.type == pygame.QUIT :
                 gameExit = True
             if eventlog.type == pygame.KEYDOWN :
@@ -344,6 +331,10 @@ def gameLoop():
         pygame.display.update()
 
         clock.tick(FPS)
+
+
+
+
 gameIntro()
 
 gameLoop()

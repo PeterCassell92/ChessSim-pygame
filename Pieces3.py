@@ -81,12 +81,9 @@ def scoutAll():
     bsupportedpiece = []
     wveccheck =[]
     bveccheck =[]
-    #pins = {"BBB": (1,0)}
-
-    for piece in piecedict: #reset pins independent of other processes (for now)
-        piece.pinned = []
 
     for piece in piecedict:
+        piece.pinned = []
         if piece.grid != "Taken":
             piece.scoutMoves()
             if piece.type != "p":
@@ -179,15 +176,12 @@ def scoutAll():
                                             
                                             n= coordstoGrid(str(m[0]),str(m[1]))
                                             if any(s== n for s in wkk.possmoves):
-                                                wveccheck.append(n)
-
-                                    
+                                                wveccheck.append(n)                                    
                                     
                                     while checksquare != wkk.position:
                                         dbc.append(coordstoGrid(str(checksquare[0]),str(checksquare[1])))
                                         checksquare = map(add, checksquare , checkLDV)
                                             
-
                                     piece.possmoves.remove(wkk.grid)
                                     
                             else:
@@ -204,8 +198,6 @@ def scoutAll():
                             del piece.possmoves[i]
                 if checkers > 1:
                     piece.possmoves =[]
-
-
 
     else:
         wkk.check = False
@@ -247,7 +239,7 @@ def scoutAll():
                             else:
                                 dwc.append(piece.grid)          
                         
-            if piece.color == "B" and piece.type != "k": ##and piece.type != "p":
+            if piece.color == "B" and piece.type != "k":
                 if checkers ==1:
                     i=0
                     while i < len(piece.possmoves) :
@@ -264,8 +256,6 @@ def scoutAll():
     else:
         bkk.check= False
 
-    #print pins
-
     bkk.scoutMoves()
     wkk.scoutMoves()
 
@@ -275,7 +265,6 @@ def scoutAll():
     for elements in bkk.possmoves:
 
         for i in [i for i, x in enumerate(bkk.possmoves) if any(x== t for t in whitecheck)]:
-            #print i
             if any(s == i for s in bkdellist):
                 pass
             else:   
@@ -291,7 +280,6 @@ def scoutAll():
     for elements in wkk.possmoves:
 
         for i in [i for i, x in enumerate(wkk.possmoves) if any(x== t for t in blackcheck)]:
-            #print i
             if any(s == i for s in wkdellist):
                 pass
             else:   
@@ -321,25 +309,18 @@ def scoutAll():
             b = piece.scoutPinVector(pininvert)
             allpinvec = a + b
            
-            pinnedmoves =[] 
-            #print piece.iD, piece.pinned, allpinvec
+            pinnedmoves =[]
             for i in piece.possmoves:
                 for x in allpinvec:
                     if x == i:
                         pinnedmoves.append(i)
 
-            piece.possmoves = pinnedmoves        
-            
-    for tile, value in board.items():
-        if value.ghost== True:
-            print value
+            piece.possmoves = pinnedmoves
 
 
 def findLDV(vector):
     if vector[0] != 0 and vector[1] == 0:
-            minvector = [x / abs(vector[0]) for x in vector]
-            #print self.minvector
-           
+            minvector = [x / abs(vector[0]) for x in vector]           
                 
     elif abs(vector[1]) == abs(vector[0]) and vector[1] != 0 and vector[0] !=0:
         minvector = [x / abs(vector[1]) for x in vector]
@@ -349,10 +330,6 @@ def findLDV(vector):
         minvector = [x / abs(vector[1]) for x in vector]
 
     return minvector
-           
-
-
-
     
 def coordstoGrid(xcoordinate, ycoordinate):
     characters = string.maketrans("12345678", "ABCDEFGH")
@@ -400,7 +377,6 @@ class Piece(object):
         board["%s" %(self.getGrid())].pieceID=self.iD
         self.hasmoved = False
         self.movevalidity = False
-        #print board["%s" %(self.getGrid())].pieceID
      
     def confirmMove(self):
         if board["%s" %(self.getGrid())].occupancy == True:
@@ -410,10 +386,6 @@ class Piece(object):
         board["%s" %(self.getGrid())].piececolor=self.color
         board["%s" %(self.getGrid())].pieceID=self.iD
         self.movevalidity = True
-        
-
-        
-        #changeturn()
 
         
     def confirmLeave(self):
@@ -423,7 +395,7 @@ class Piece(object):
     def moveTo(self, destination):
         for elements in self.possmoves:
             if elements == destination:
-                if self.type == "k":
+                if self.type == "k": #specific to castling
                     if self.color == "W":
                         if destination == "C1" and self.hasmoved == False:
                             
@@ -461,6 +433,14 @@ class Piece(object):
                             board["F8"].pieceID=bkr.iD
                             
                             bkr.hasmoved = True
+                
+                if self.type == "p" and board[(destination)].ghost == True:
+                    self.enPassant(destination)
+
+                for tile, value in board.items(): # Deletes all ghost trails (en passant)
+                        if value.ghost== True:
+                            value.ghost = False
+
                 if self.type == "p":
                     difference = map(sub, gridtoCoords(destination), self.position)
                     ydif = abs(difference[1])
@@ -469,19 +449,19 @@ class Piece(object):
                             m=-1
                         if self.color == "W":
                             m=1
-                        board["%s" %(postoGrid(map(add, self.position, [0,m])))].ghost = True
-
-                        print "double move"
-
+                        board["%s" %(postoGrid(map(add, self.position, [0,m])))].ghost = True    #creates takeable ghost trail behind double moving pawn.                
 
                 self.confirmLeave()
                 characters = string.maketrans("ABCDEFGH", "12345678")
                 letcon = destination.translate(characters)
-                self.position= [int(letcon[0]), int(letcon[1])]
-                self.confirmMove()      
+                self.position= [int(letcon[0]), int(letcon[1])] #this is where the position is actually changed as the result of a move
+                self.confirmMove()
+
+                if self.type == "p":
+                    if gridtoCoords(destination)[1] == 1 or gridtoCoords(destination)[1] == 8:
+                        self.promotePiece(destination)
+
         scoutAll()
-        #for tile in board.items():
-         #   tile.ghost = False
 
     def takePiece(self):
         for x in piecedict:
@@ -489,6 +469,36 @@ class Piece(object):
                 x.position = []
                 x.grid = "Taken"
                 print "%s was taken by %s" %(x.iD, self.iD)
+
+    def enPassant(self, destination):
+        if self.color == "W":
+            m = 1
+        elif self.color == "B":
+            m =-1
+
+        passedpawnposition = [gridtoCoords(destination)[0], (gridtoCoords(destination)[1] -m)]
+        print(coordstoGrid(str(passedpawnposition[0]), str(passedpawnposition[1])))
+
+        for piece in piecedict:
+            if piece.position == passedpawnposition:
+                board[coordstoGrid(str(passedpawnposition[0]), str(passedpawnposition[1]))].unoccupy()
+                piece.position = []
+                piece.grid = "Taken"
+
+    def promotePiece(self, destination):
+        board[destination].unoccupy()
+
+        propiece = Queen(self.color)
+        propiece.position = gridtoCoords(destination)
+        propiece.grid = destination
+        propiece.iD = "pro"
+        piecedict.append(propiece)
+
+        board[destination].piececolor = self.color
+        board[destination].pieceID = propiece.iD
+
+        self.grid = "Taken"
+        self.position = []
 
     def scoutPinVector(self,PinVec):
         vector = PinVec
@@ -619,9 +629,6 @@ class Rook(Piece):
             self.scoutVector([0,1])
             self.scoutVector([-1,0])
             self.scoutVector([0,-1])
-                   
-             
-    
 
 class Pawn(Piece):
       
@@ -641,7 +648,7 @@ class Pawn(Piece):
         self.getGrid()
         self.side = self.rank
         self.confirmInit()
-#return
+
     def scoutMoves(self):
         self.possmoves= []
         self.supportedpieces = []
@@ -655,8 +662,9 @@ class Pawn(Piece):
             if board["%s" %(y)].occupancy == False:
                 self.possmoves.append(y)
             z= postoGrid(map(add,self.position,[0, (2*f)]))
-            if board["%s" %(y)].occupancy == False and board["%s" %(z)].occupancy == False and self.hasmoved == False:
-                self.possmoves.append(z)
+            if z[1] != '0' and z[1] != '9':
+                if board["%s" %(y)].occupancy == False and board["%s" %(z)].occupancy == False and self.hasmoved == False:
+                    self.possmoves.append(z)
                
             diag1 = map(add, [1,f],self.position )
             diag2 = map(add, [-1,f], self.position)
@@ -665,7 +673,7 @@ class Pawn(Piece):
                 space = coordstoGrid(str(diag1[0]),str(diag1[1]))
                 if board["%s" %(space)].piececolor != self.color and board["%s" %(space)].occupancy== True:
                     self.possmoves.append(space)
-                if board["%s" %(space)].ghost == True:
+                if board["%s" %(space)].ghost == True: #accoutn
                     self.possmoves.append(space)
             if 0 < diag2[0] <= 8 and 0 <diag2[1] <= 8:
 
@@ -674,8 +682,6 @@ class Pawn(Piece):
                     self.possmoves.append(space)
                 if board["%s" %(space)].ghost == True:
                     self.possmoves.append(space)
-            
-         
 
 class Bishop(Piece):
       
@@ -685,7 +691,6 @@ class Bishop(Piece):
         self.type = "b"
         self.pinned = []
         
-        #if self.position == NULL:
         if self.color == "W":
             if self.side == "Q":
                 self.initialposition = [3,1]
@@ -703,7 +708,7 @@ class Bishop(Piece):
         self.position = self.initialposition
         self.getGrid()
         self.confirmInit()
-#return
+
     def scoutMoves(self):
         self.possmoves= []
         self.supportedpieces = []
@@ -720,8 +725,6 @@ class Queen(Piece):
         self.side = "Q"
         self.type = "q"
         self.pinned = []
-        
-        #if self.position == NULL:
         if self.color == "W":
             self.initialposition = [4,1] 
                           
@@ -730,10 +733,7 @@ class Queen(Piece):
         
         self.position = self.initialposition
         self.getGrid()
-        
-        #self.iD= '%sQ' %(self.color)
         self.confirmInit()
-#return
     
     def scoutMoves(self):
         self.possmoves = []
@@ -757,7 +757,7 @@ class King(Piece):
         self.check = False   
         self.mated = False
         self.pinned = False     
-        #if self.position == NULL:
+       
         if self.color == "W":
             self.initialposition = [5,1] 
                           
@@ -766,13 +766,12 @@ class King(Piece):
 
         self.position = self.initialposition
         self.getGrid()
-        #self.iD= '%sK' %(self.color)
         self.confirmInit()
 #return
     def scoutMoves(self):
         global whitecheck
         global blackcheck
-        #print blackcheck
+        
         self.possmoves = []
         self.supportedpieces = []
         if self.grid != "Taken":
@@ -782,8 +781,6 @@ class King(Piece):
                 while j < 9:
                     
                     space = coordstoGrid(str(i), str(j))
-                    #print space
-
 
                     self.gridx= i
                     self.gridy= j
@@ -797,7 +794,7 @@ class King(Piece):
                                         self.possmoves.append(space)
                                     elif board['%s' %(space)].piececolor == self.color:
                                         self.supportedpieces.append(space)
-                                    #print "Valid King move." # Rook moves to " + destination
+                                    
                                 elif self. color == "W" and self.hasmoved == False:
                                     if space == "G1" and wkr.hasmoved == False:
                                         if any(t == "F1" for t in blackcheck) or any(t == "G1" for t in blackcheck) or wkk.check == True:
@@ -839,9 +836,7 @@ class King(Piece):
                                                 self.supportedpieces.append(space)
                                         #queenside castle
                     j +=1
-                i+=1
-
-                         
+                i+=1        
         
 class Knight(Piece):
       
@@ -868,7 +863,7 @@ class Knight(Piece):
         self.position = self.initialposition
         self.getGrid()
         self.confirmInit()
-#return
+
     def scoutMoves(self):
     	self.possmoves = []
         self.supportedpieces = []
