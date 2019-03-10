@@ -2,14 +2,14 @@ from operator import add
 from operator import sub
 import string
 from meld.vc.svk import NULL
-from Pieces3 import initBoard, scoutAll, coordstoGrid
-from Tile import Tile
+from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords
 
+from Pieces3 import initBoard, scoutAll
+
+from Tile import Tile
 
 import pygame
 import random
-
-global selected
 
 initBoard()
 scoutAll()
@@ -40,6 +40,9 @@ clock = pygame.time.Clock()
 gameDisplay = pygame.display.set_mode((display_width,display_height))
 pygame.display.set_caption('Chess')
 pygame.display.update()
+
+game_state = {}
+game_state= {"game_surface" : gameDisplay}
 
 button_width = display_width/8
 button_height = display_height/12
@@ -112,8 +115,6 @@ def pause():
             if event.type == pygame.QUIT :
                 pygame.quit
                 quit()
-
-        #gameDisplay.fill(white)
         
 
         clock.tick(10)
@@ -189,8 +190,7 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
             for piece in piecedict:
                 if piece.iD == board['%s' %(selected)].pieceID:
                     piece.moveTo('%s' %(destinationselect))
-
-                  
+               
             for piece in piecedict:
                 if piece.movevalidity == True:
                     
@@ -303,6 +303,7 @@ def gameLoop():
             gameOver=True
         gameDisplay.fill(blue)
 
+        #big messy block for drawing each square on the chessboard
         i=1
         while i < 9:
             j = 1
@@ -331,9 +332,6 @@ def gameLoop():
         pygame.display.update()
 
         clock.tick(FPS)
-
-
-
 
 gameIntro()
 
