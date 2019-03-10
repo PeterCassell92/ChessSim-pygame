@@ -86,13 +86,14 @@ def scoutAll():
         if piece.grid != "Taken":
             piece.scoutMoves()
             if piece.type != "p":
+
                 for element in piece.possmoves:
                     if piece.color == "W":
                         if any(t == element for t in whitecheck):
                             pass
                         else:   
                             whitecheck.append(element)
-                    if piece.color == "B":
+                    elif piece.color == "B":
                         if any(t == element for t in blackcheck):
                             pass
                         else:   
@@ -103,12 +104,12 @@ def scoutAll():
                             pass
                         else:   
                             whitecheck.append(element)
-                    if piece.color == "B":
+                    elif piece.color == "B":
                         if any(t == element for t in blackcheck):
                             pass
                         else:   
                             blackcheck.append(element)
-            if piece.type== "p":
+            elif piece.type== "p":
                 if piece.color == "W":
                     diag1 = map(add, [1,1],piece.position )
                     diag2 = map(add, [-1,1], piece.position)
@@ -129,7 +130,7 @@ def scoutAll():
                             pass
                         else:   
                             whitecheck.append(space)
-                if piece.color == "B":
+                elif piece.color == "B":
                     diag1 = map(add, [1,-1],piece.position )
                     diag2 = map(add, [-1,-1], piece.position)
                     if 0 < diag1[0] <= 8 and 0 <diag1[1] <= 8:
@@ -158,7 +159,7 @@ def scoutAll():
         wveccheck =[]
        
         for piece in piecedict:
-            if piece.color == "B": ##and piece.type != "p":
+            if piece.color == "B":
                     for i in piece.possmoves:
                         if piece.grid != "Taken":      
                             if i == wkk.grid:
@@ -186,7 +187,7 @@ def scoutAll():
                             else:
                                 dbc.append(piece.grid)
         for piece in piecedict:                
-            if piece.color == "W" and piece.type != "k": ##and piece.type != "p":
+            if piece.color == "W" and piece.type != "k":
                 if checkers ==1:
                     i=0
                     while i < len(piece.possmoves) :
@@ -205,12 +206,12 @@ def scoutAll():
     if any(u== bkk.grid for u in whitecheck):
         print "Black King in Check"
         bkk.check = True
-        dwc =[]
+        dwc =[] #direct white check
         checkers = 0
         allbposs=[]
         bveccheck=[]
         for piece in piecedict:
-            if piece.color == "W": ##and piece.type != "p":
+            if piece.color == "W":
                 for i in piece.possmoves:
                     if piece.grid != "Taken":       
                         if i == bkk.grid:
@@ -228,8 +229,7 @@ def scoutAll():
                                             
                                             if any(s== n for s in bkk.possmoves):
                                                 bveccheck.append(n)
-                                
-                                
+
                                 while checksquare != bkk.position:
                                     dwc.append(coordstoGrid(str(checksquare[0]),str(checksquare[1])))
                                     checksquare = map(add, checksquare , checkLDV)
@@ -250,8 +250,6 @@ def scoutAll():
                 if checkers > 1:
                     piece.possmoves = []
 
-        
-
     else:
         bkk.check= False
 
@@ -260,6 +258,8 @@ def scoutAll():
 
     whitecheck.extend(bveccheck)
     blackcheck.extend(wveccheck)
+
+    #King cannot move into check
     bkdellist = []
     for elements in bkk.possmoves:
 
@@ -268,13 +268,13 @@ def scoutAll():
                 pass
             else:   
                 bkdellist.append(i)
-    #King cannot move into check
-
+    
+    #Delete check elements from bkkpossmoves
     for elements in sorted(bkdellist, reverse=True):
         del bkk.possmoves[elements]
 
-    #Delete check elements from bkpossmoves
 
+    #King cannot move into check
     wkdellist = []
     for elements in wkk.possmoves:
 
@@ -284,6 +284,7 @@ def scoutAll():
             else:   
                 wkdellist.append(i)
        
+     #Delete check elements from wkkpossmoves  
     for elements in sorted(wkdellist, reverse=True):
         del wkk.possmoves[elements]
 
@@ -565,14 +566,10 @@ class Piece(object):
                                 block2 = piece.iD
 
                         if self.color == "W" and block2 == "bkk" and obstructioncolor =="B": #determines if piece is pinned to a king
-                            for piece in piecedict:
-                                if piece.iD == blockID:
-                                    piece.pinned = minvector
+                            next((x for x in piecedict if x.iD == blockID), None).pinned = minvector
 
                         if self.color == "B" and block2 == "wkk" and obstructioncolor =="W": #determines if piece is pinned to a king
-                            for piece in piecedict:
-                                if piece.iD == blockID:
-                                    piece.pinned = minvector
+                            next((x for x in piecedict if x.iD == blockID), None).pinned = minvector
 
               
                 
@@ -645,11 +642,11 @@ class Pawn(Piece):
             elif self.color == "W":
                 f= 1
             y= postoGrid(map(add,self.position,[0,f]))
-            
-            if board["%s" %(y)].occupancy == False:
-                self.possmoves.append(y)
+            if y[1] != '0' and y[1] != '9':    
+                if board["%s" %(y)].occupancy == False:
+                    self.possmoves.append(y)
             z= postoGrid(map(add,self.position,[0, (2*f)]))
-            if z[1] != '0' and z[1] != '9':
+            if z[1] != '0' and z[1] != '9' and y[1] != '0' and y[1] != '9':
                 if board["%s" %(y)].occupancy == False and board["%s" %(z)].occupancy == False and self.hasmoved == False:
                     self.possmoves.append(z)
                

@@ -1,5 +1,7 @@
+#!/usr/bin/python
 from operator import add
 from operator import sub
+import os
 import string
 from meld.vc.svk import NULL
 from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords
@@ -7,6 +9,7 @@ from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords
 from Pieces3 import initBoard, scoutAll
 
 from Tile import Tile
+from spriteclasses import BaseSprite, ImageSprite
 
 import pygame
 import random
@@ -54,33 +57,37 @@ smallfont= pygame.font.SysFont(None, 25)
 medfont= pygame.font.SysFont(None, 50)
 largefont= pygame.font.SysFont(None, 80)
 
-bking = pygame.image.load('bking.png')
-bqueen = pygame.image.load('bqueen.png')
-bpawn = pygame.image.load('bpawn.png')
-bbishop= pygame.image.load('bbishop.png')
-bknight=pygame.image.load('bknight.png')
-brook=pygame.image.load('brook.png')
-wking = pygame.image.load('wking.png')
-wqueen = pygame.image.load('wqueen.png')
-wpawn = pygame.image.load('wpawn.png')
-wbishop= pygame.image.load('wbishop.png')
-wknight = pygame.image.load('wknight.png')
-wrook = pygame.image.load('wrook.png')
+piecesfolder = os.getcwd()+ '/img/pieces/'
+
+bking = pygame.image.load(piecesfolder + 'bking.png')
+bqueen = pygame.image.load(piecesfolder + 'bqueen.png')
+bpawn = pygame.image.load(piecesfolder + 'bpawn.png')
+bbishop= pygame.image.load(piecesfolder + 'bbishop.png')
+bknight=pygame.image.load(piecesfolder + 'bknight.png')
+brook=pygame.image.load(piecesfolder + 'brook.png')
+wking = pygame.image.load(piecesfolder + 'wking.png')
+wqueen = pygame.image.load(piecesfolder + 'wqueen.png')
+wpawn = pygame.image.load(piecesfolder + 'wpawn.png')
+wbishop= pygame.image.load(piecesfolder + 'wbishop.png')
+wknight = pygame.image.load(piecesfolder + 'wknight.png')
+wrook = pygame.image.load(piecesfolder + 'wrook.png')
 
 turn = "W"
 selected = ""
 movevalidity = False
 
 def gameIntro():
+    backgroundimg = ImageSprite(0 , 0, os.getcwd()+ '/img/other/chesspixelimg.png')
+    chesstext = ImageSprite( 120, 75, os.getcwd()+ '/img/other/chessfont.png')
+    introsprites = pygame.sprite.Group()
+    introsprites.add(backgroundimg, chesstext)
+
     intro = True
     while intro:
-        gameDisplay.fill(white)
-        message_to_screen("Welcome to ChessSim", green, -100, "large")
-        message_to_screen("Beginning with White take alternate turns to move pieces", black, -30)
-        message_to_screen("The game will only accept legal chess moves", black, 10)
-        message_to_screen("You win the game by checkmating your opponent", black, 50)
-        #message_to_screen("Press C to Continue or Q to Quit", black, 150, "medium")
 
+        gameDisplay.fill(white)
+        introsprites.draw(gameDisplay)
+    
         for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN :
                     if event.key == pygame.K_q:
@@ -93,10 +100,7 @@ def gameIntro():
                     quit() 
 
         button("Start", (display_width/4-button_width/2), (5*display_height/6), button_width, button_height, light_green, green, "Play")
-        button("Controls", (display_width*2/4-button_width/2), (5*display_height/6),button_width, button_height, light_yellow, yellow)
         button("Quit",(display_width*3/4-button_width/2), (5*display_height/6),button_width, button_height, light_red, red, "Quit")
-
-
         pygame.display.update()
         clock.tick(5)
 def pause():
@@ -122,10 +126,12 @@ def pause():
 
 def turndisplay(turn):
     if turn == "W":
-        text = smallfont.render("It is White's turn", True, black)
+        # text = smallfont.render("It is White's turn", True, black)
+        message_to_screen("White's Turn", white, -(display_height/2) +60, "medium")
     if turn == "B":
-        text = smallfont.render("It is Black's turn", True, black)
-    gameDisplay.blit(text, (0,0))
+        # text = smallfont.render("It is Black's turn", True, black)
+        message_to_screen("Black's Turn", white, -(display_height/2)+60, "medium")
+        pygame.display.update()
 
 def text_Objects(text, color, size):
     if size == "small":
@@ -153,11 +159,8 @@ def button(msg, x, y, width, height, activecolor, inactivecolor, action = None):
     if x+width > cur[0] > x and y+height >cur[1]> y:
             pygame.draw.rect(gameDisplay, activecolor, (x,y, width,height))
             if click[0] == 1:
-                if action == "Play":
-                    
+                if action == "Play":                   
                     gameLoop()
-                if action == "Controls":
-                    pass
                 if action == "Quit":
                     pygame.quit
                     quit()
@@ -335,7 +338,7 @@ def gameLoop():
 
 gameIntro()
 
-gameLoop()
+#gameLoop()
 
 pygame.quit
 quit()
