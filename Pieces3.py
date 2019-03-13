@@ -4,7 +4,6 @@ import string
 import pygame
 from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords
 
-from meld.vc.svk import NULL
 from Tile import Tile
    
 def initBoard():

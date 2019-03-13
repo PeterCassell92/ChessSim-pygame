@@ -3,7 +3,7 @@ from operator import add
 from operator import sub
 import os
 import string
-from meld.vc.svk import NULL
+
 from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords
 
 from Pieces3 import initBoard, scoutAll
@@ -43,9 +43,6 @@ clock = pygame.time.Clock()
 gameDisplay = pygame.display.set_mode((display_width,display_height))
 pygame.display.set_caption('Chess')
 pygame.display.update()
-
-game_state = {}
-game_state= {"game_surface" : gameDisplay}
 
 button_width = display_width/8
 button_height = display_height/12
