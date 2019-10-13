@@ -2,7 +2,7 @@ from operator import add
 from operator import sub
 import string
 import pygame
-from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords
+from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords, addIntArrays, subtractIntArrays
 
 from Tile import Tile
    
@@ -78,14 +78,15 @@ def scoutAll():
     blackcheck = []
     wsupportedpiece = []
     bsupportedpiece = []
-    wveccheck =[]
-    bveccheck =[]
+    allwposs = []
+    allbposs = []
 
     for piece in piecedict:
         if piece.grid != "Taken":
+            #populate each piece with its possible movements (irrespective of check and pins)
             piece.scoutMoves()
+            #use possible moves to map out squares that the opposite colored king cannot move to or take on.
             if piece.type != "p":
-
                 for element in piece.possmoves:
                     if piece.color == "W":
                         if any(t == element for t in whitecheck):
@@ -108,10 +109,11 @@ def scoutAll():
                             pass
                         else:   
                             blackcheck.append(element)
+            #pawns are an exception as they do not threaten check in the squares that they can move to.
             elif piece.type== "p":
                 if piece.color == "W":
-                    diag1 = map(add, [1,1],piece.position )
-                    diag2 = map(add, [-1,1], piece.position)
+                    diag1 = addIntArrays([1,1],piece.position )
+                    diag2 = addIntArrays([-1,1], piece.position)
                     if 0 < diag1[0] <= 8 and 0 <diag1[1] <= 8:
                                               
                         space = coordstoGrid(str(diag1[0]),str(diag1[1]))
@@ -130,8 +132,8 @@ def scoutAll():
                         else:   
                             whitecheck.append(space)
                 elif piece.color == "B":
-                    diag1 = map(add, [1,-1],piece.position )
-                    diag2 = map(add, [-1,-1], piece.position)
+                    diag1 = addIntArrays([1,-1],piece.position )
+                    diag2 = addIntArrays([-1,-1], piece.position)
                     if 0 < diag1[0] <= 8 and 0 <diag1[1] <= 8:
 
                         space = coordstoGrid(str(diag1[0]),str(diag1[1]))
@@ -148,172 +150,141 @@ def scoutAll():
                             pass
                         else:   
                             blackcheck.append(space)
-
+#determine if white king in check
     if any(u == wkk.grid for u in blackcheck):
-        print "White King in Check"
-        wkk.check= True
-        dbc =[] # direct black check
-        checkers= 0
-        allwposs =[]
-        wveccheck =[]
-       
-        for piece in piecedict:
-            if piece.color == "B":
-                    for i in piece.possmoves:
-                        if piece.grid != "Taken":      
-                            if i == wkk.grid:
-                                checkers +=1
-                                if piece.type != "n":
-
-                                    checkvec=  map(sub, wkk.position , piece.position)
-                                    checkLDV =findLDV(checkvec) #lowestdenominatorvector
-                                    checksquare = piece.position
-
-                                    if piece.type != "p":
-                                        m = map(add, wkk.position, checkLDV)
-                                        if 0< m[0] <=8 and 0 < m[1]  <=8:
-                                            
-                                            n= coordstoGrid(str(m[0]),str(m[1]))
-                                            if any(s== n for s in wkk.possmoves):
-                                                wveccheck.append(n)                                    
-                                    
-                                    while checksquare != wkk.position:
-                                        dbc.append(coordstoGrid(str(checksquare[0]),str(checksquare[1])))
-                                        checksquare = map(add, checksquare , checkLDV)
-                                            
-                                    piece.possmoves.remove(wkk.grid)
-                                    
-                            else:
-                                dbc.append(piece.grid)
-        for piece in piecedict:                
-            if piece.color == "W" and piece.type != "k":
-                if checkers ==1:
-                    i=0
-                    while i < len(piece.possmoves) :
-                        if any(s == piece.possmoves[i] for s in dbc):
-                            allwposs.append(piece.possmoves[i])
-                            i+=1
-                        else:
-                            del piece.possmoves[i]
-                if checkers > 1:
-                    piece.possmoves =[]
-
+        allwposs = restrictMovesDueToCheck(wkk)
     else:
         wkk.check = False
-
-
-    if any(u== bkk.grid for u in whitecheck):
-        print "Black King in Check"
-        bkk.check = True
-        dwc =[] #direct white check
-        checkers = 0
-        allbposs=[]
-        bveccheck=[]
         for piece in piecedict:
-            if piece.color == "W":
-                for i in piece.possmoves:
-                    if piece.grid != "Taken":       
-                        if i == bkk.grid:
-                            checkers +=1
-                            if piece.type != "n":
+            if piece.type != "k" and piece.color == "W":
+                appendEachToArray(piece.possmoves, allwposs)
 
-                                checkvec=  map(sub, bkk.position , piece.position)
-                                checkLDV =findLDV(checkvec) #lowestdenominatorvector
-                                checksquare = piece.position
-
-                                if piece.type != "p":
-                                        m = map(add, bkk.position, checkLDV)
-                                        if 0< m[0] <=8 and 0 < m[1]  <=8:
-                                            n= coordstoGrid(str(m[0]),str(m[1]))
-                                            
-                                            if any(s== n for s in bkk.possmoves):
-                                                bveccheck.append(n)
-
-                                while checksquare != bkk.position:
-                                    dwc.append(coordstoGrid(str(checksquare[0]),str(checksquare[1])))
-                                    checksquare = map(add, checksquare , checkLDV)
-                                    
-                                piece.possmoves.remove(bkk.grid)     
-                            else:
-                                dwc.append(piece.grid)          
-                        
-            if piece.color == "B" and piece.type != "k":
-                if checkers ==1:
-                    i=0
-                    while i < len(piece.possmoves) :
-                        if any(s == piece.possmoves[i] for s in dwc):
-                            allbposs.append(piece.possmoves[i])
-                            i+=1
-                        else:
-                            del piece.possmoves[i]
-                if checkers > 1:
-                    piece.possmoves = []
-
+#determime if black king is in check.
+    if any(u== bkk.grid for u in whitecheck):
+        allbposs = restrictMovesDueToCheck(bkk)
     else:
         bkk.check= False
+        for piece in piecedict:
+            if piece.type != "k" and piece.color == "B":
+                appendEachToArray(piece.possmoves, allbposs)
 
+    #the king's moves are now re-evaluated
     bkk.scoutMoves()
     wkk.scoutMoves()
 
-    whitecheck.extend(bveccheck)
-    blackcheck.extend(wveccheck)
+    #Kings moves are restricted so it cannot move into check
+    restrictKingMoves(bkk, whitecheck)
+    restrictKingMoves(wkk, blackcheck)
 
-    #King cannot move into check
-    bkdellist = []
-    for elements in bkk.possmoves:
-
-        for i in [i for i, x in enumerate(bkk.possmoves) if any(x== t for t in whitecheck)]:
-            if any(s == i for s in bkdellist):
-                pass
-            else:   
-                bkdellist.append(i)
-    
-    #Delete check elements from bkkpossmoves
-    for elements in sorted(bkdellist, reverse=True):
-        del bkk.possmoves[elements]
+    allwposs = appendEachToArray(wkk.possmoves, allwposs)
+    allbposs = appendEachToArray(bkk.possmoves, allbposs)
 
 
-    #King cannot move into check
-    wkdellist = []
-    for elements in wkk.possmoves:
-
-        for i in [i for i, x in enumerate(wkk.possmoves) if any(x== t for t in blackcheck)]:
-            if any(s == i for s in wkdellist):
-                pass
-            else:   
-                wkdellist.append(i)
-       
-     #Delete check elements from wkkpossmoves  
-    for elements in sorted(wkdellist, reverse=True):
-        del wkk.possmoves[elements]
-
-    if bkk.check == True:    # if bkk is in check, does black have any valid moves?
-        for element in bkk.possmoves:
-            allbposs.append(element)
-        if len(allbposs) == 0:
-            print "CHECKMATE"
-            bkk.mated =True
-            
-    if wkk.check == True:     # if wkk is in check, does white have any valid moves?
-        for element in wkk.possmoves:
-            allwposs.append(element)
-        if len(allwposs) == 0:
-            print "CHECKMATE"
-            wkk.mated = True
-
-    for piece in piecedict: # confines possible moves of pinned pieces to only the vector of the pin.
+    #Pinned piece's moves are confined to only the vector of the pin.
+    for piece in piecedict: 
         if piece.pinned:
             pininvert = [-x for x in piece.pinned]
             a = piece.scoutPinVector(piece.pinned)
             b = piece.scoutPinVector(pininvert)
             allpinvec = a + b   
-            pinnedmoves =[]
+            pinnedmoves = []
             for i in piece.possmoves:
                 for x in allpinvec:
                     if x == i:
                         pinnedmoves.append(i)
             piece.pinned = []
             piece.possmoves = pinnedmoves
+
+    wkk.mated = checkIfCheckmated(wkk, allwposs)
+    bkk.mated = checkIfCheckmated(bkk, allbposs)
+
+    #game state must know what turn it is in order to call a stalemate.
+    # checkIfStalemated(bkk, allbposs)
+    # checkIfStalemated(wkk, allwposs)
+
+def checkIfCheckmated(king, allpossmoves):
+    if (king.check == True and len(allpossmoves) == 0) :    
+        print("CHECKMATE")
+        return True
+    else:
+        return False
+
+def checkIfStalemated(king, allpossmoves):
+    if (king.check == False and len(allpossmoves) == 0) :    
+        print("CHECKMATE")
+        return True
+    else:
+        return False
+
+def restrictMovesDueToCheck(king):
+    print("%s King in Check") %king.color
+    king.check= True
+    dc =[] # direct check
+    checkers= 0
+    allposs =[]
+    veccheck =[]
+   
+    for piece in piecedict:
+        if piece.color != king.color:
+                for i in piece.possmoves:
+                    if piece.grid != "Taken":
+                    #if king grid position is within the pieces possible moves then it is a checker.     
+                        if i == king.grid:
+                            checkers +=1
+                            if piece.type != "n":
+
+                                checkvec= subtractIntArrays(king.position , piece.position)
+                                checkLDV = findLDV(checkvec) #lowestdenominatorvector
+                                checksquare = piece.position
+
+                                if piece.type != "p":
+                                    m = addIntArrays(king.position, checkLDV)
+                                    if 0< m[0] <=8 and 0 < m[1]  <=8:
+                                        
+                                        n= coordstoGrid(str(m[0]),str(m[1]))
+                                        if any(s== n for s in king.possmoves):
+                                            veccheck.append(n)                                    
+                                #get the co-ordinates between the checker and the king
+                                while checksquare != king.position:
+                                    dc.append(coordstoGrid(str(checksquare[0]),str(checksquare[1])))
+                                    checksquare = addIntArrays(checksquare , checkLDV)
+                                #remove possibility to take the King        
+                                piece.possmoves.remove(king.grid)       
+                            dc.append(piece.grid)
+    for piece in piecedict:                
+        if piece.color == king.color and piece.type != "k":
+            if checkers ==1:
+                i=0
+                while i < len(piece.possmoves) :
+                    #only moves that block direct check or take the checker are possible
+                    if any(s == piece.possmoves[i] for s in dc):
+                        allposs.append(piece.possmoves[i])
+                        i+=1
+                    else:
+                        del piece.possmoves[i]
+            if checkers > 1:
+                piece.possmoves =[]
+    #pieces and their possmoves should already be returned.... does that mean that I only have to return allposs?
+    return allposs
+
+def restrictKingMoves(king, checkarray):
+    #Kings moves are restricted so it cannot move into check
+    deletelist = []
+    for elements in king.possmoves:
+        for i in [i for i, x in enumerate(king.possmoves) if any(x== t for t in checkarray)]:
+            if any(s == i for s in deletelist):
+                pass
+            else:   
+                deletelist.append(i)
+    
+    #Delete check elements from bkkpossmoves
+    for elements in sorted(deletelist, reverse=True):
+        del king.possmoves[elements]
+
+def appendEachToArray(source, target):
+    for element in source:
+        target.append(element)
+    return target
 
 class Piece(object):
 
@@ -325,7 +296,7 @@ class Piece(object):
     
     def getGrid(self):
         self.xpos = str(self.position[0])
-        characters2 = string.maketrans("12345678", "ABCDEFGH")
+        characters2 = str.maketrans("12345678", "ABCDEFGH")
         self.text2 = self.xpos.translate(characters2)
         self.grid= self.text2 + str(self.position[1])
         return self.grid
@@ -402,19 +373,19 @@ class Piece(object):
 
                 #creates takeable ghost trail behind double moving pawn.  
                 if self.type == "p":
-                    difference = map(sub, gridtoCoords(destination), self.position)
+                    difference = subtractIntArrays(gridtoCoords(destination), self.position)
                     ydif = abs(difference[1])
                     if ydif == 2:
                         if self.color == "B":
                             m=-1
                         if self.color == "W":
                             m=1
-                        board["%s" %(postoGrid(map(add, self.position, [0,m])))].ghost = True          
+                        board["%s" %(postoGrid(addIntArrays(self.position, [0,m])))].ghost = True          
 
                 self.confirmLeave()
 
                 #new position is now the chosen destination
-                characters = string.maketrans("ABCDEFGH", "12345678")
+                characters = str.maketrans("ABCDEFGH", "12345678")
                 letcon = destination.translate(characters)
                 self.position= [int(letcon[0]), int(letcon[1])]
 
@@ -430,7 +401,7 @@ class Piece(object):
             if x.position == self.position and x.iD != self.iD:
                 x.position = []
                 x.grid = "Taken"
-                print "%s was taken by %s" %(x.iD, self.iD)
+                print("%s was taken by %s" %(x.iD, self.iD))
 
     def enPassant(self, destination):
         if self.color == "W":
@@ -503,7 +474,7 @@ class Piece(object):
         z=1
         if z <= vecmax: 
             while z <= vecmax:
-                obcheck= map(add, obcheck, vector)
+                obcheck= addIntArrays(obcheck, vector)
                 z += 1
                 
                 checkpos= postoGrid(obcheck)
@@ -540,7 +511,7 @@ class Piece(object):
         z=1
         if z <= vecmax: 
             while z <= vecmax:
-                obcheck= map(add, obcheck, minvector)
+                obcheck= addIntArrays(obcheck, minvector)
                 z += 1
                 
                 checkpos= postoGrid(obcheck)
@@ -640,17 +611,17 @@ class Pawn(Piece):
                 f = -1
             elif self.color == "W":
                 f= 1
-            y= postoGrid(map(add,self.position,[0,f]))
+            y= postoGrid(addIntArrays(self.position,[0,f]))
             if y[1] != '0' and y[1] != '9':    
                 if board["%s" %(y)].occupancy == False:
                     self.possmoves.append(y)
-            z= postoGrid(map(add,self.position,[0, (2*f)]))
+            z= postoGrid(addIntArrays(self.position,[0, (2*f)]))
             if z[1] != '0' and z[1] != '9' and y[1] != '0' and y[1] != '9':
                 if board["%s" %(y)].occupancy == False and board["%s" %(z)].occupancy == False and self.hasmoved == False:
                     self.possmoves.append(z)
                
-            diag1 = map(add, [1,f],self.position )
-            diag2 = map(add, [-1,f], self.position)
+            diag1 = addIntArrays([1,f],self.position)
+            diag2 = addIntArrays([-1,f], self.position)
             if 0 < diag1[0] <= 8 and 0 <diag1[1] <= 8:
 
                 space = coordstoGrid(str(diag1[0]),str(diag1[1]))
@@ -779,7 +750,7 @@ class King(Piece):
                     self.gridx= i
                     self.gridy= j
                     self.gridspace = [self.gridx, self.gridy]
-                    self.vector = map(sub, self.gridspace, self.position)
+                    self.vector = subtractIntArrays(self.gridspace, self.position)
                       
                     if self.gridx >= 1 and self.gridx <= 8:
                         if self.gridy >= 1 and self.gridy <= 8:
@@ -865,7 +836,7 @@ class Knight(Piece):
         self.confirmInit()
 
     def scoutMoves(self):
-    	self.possmoves = []
+        self.possmoves = []
         self.supportedpieces = []
         if self.grid != "Taken":
             xk=2
@@ -882,7 +853,7 @@ class Knight(Piece):
             alltransform= [vec1,mir1,vec2,mir2,vec3,mir3,vec4,mir4] #accumulates all eight transformations of L shaped move.
             
             for element in alltransform:
-                Lmove =map(add, self.position, element)
+                Lmove =addIntArrays(self.position, element)
                 if  Lmove[0] <=8 and Lmove[0] >=1 and Lmove[1]>=1 and Lmove[1] <=8:
                     if board['%s' %(postoGrid(Lmove))].piececolor !=self.color:
                         self.possmoves.append(postoGrid(Lmove))

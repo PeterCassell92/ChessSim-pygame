@@ -3,6 +3,7 @@ from operator import add
 from operator import sub
 import os
 import string
+import requests
 
 from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords
 
@@ -100,6 +101,7 @@ def gameIntro():
         button("Quit",(display_width*3/4-button_width/2), (5*display_height/6),button_width, button_height, light_red, red, "Quit")
         pygame.display.update()
         clock.tick(5)
+        
 def pause():
     paused = True
     message_to_screen("Paused", black, -100, "large")
@@ -156,7 +158,8 @@ def button(msg, x, y, width, height, activecolor, inactivecolor, action = None):
     if x+width > cur[0] > x and y+height >cur[1]> y:
             pygame.draw.rect(gameDisplay, activecolor, (x,y, width,height))
             if click[0] == 1:
-                if action == "Play":                   
+                if action == "Play":
+                    gameID = print(requests.get("http://chess-api-chess.herokuapp.com/api/v1/chess/one"))      
                     gameLoop()
                 if action == "Quit":
                     pygame.quit
@@ -182,11 +185,10 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
                     if piece.color == turn:
                         selected = coordinates
 
-                        print "Selected %s" %(coordinates)
+                        print("Selected %s" %(coordinates))
                         
         if click[2] == 1 and selected != coordinates and selected != "":
             destinationselect = coordinates
-            print 
             for piece in piecedict:
                 if piece.iD == board['%s' %(selected)].pieceID:
                     piece.moveTo('%s' %(destinationselect))
