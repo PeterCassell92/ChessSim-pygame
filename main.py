@@ -3,11 +3,12 @@ from operator import add
 from operator import sub
 import os
 import string
-import requests
+import sys
 
-from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords
+from gridfunctions import findLDV, coordstoGrid, postoGrid, gridtoCoords, oppColor, getPieceByGrid
 
 from Pieces3 import initBoard, scoutAll
+from chessapi import createGame, movePiece, moveAI, checkGameover
 
 from Tile import Tile
 from spriteclasses import BaseSprite, ImageSprite
@@ -33,6 +34,8 @@ light_red = (254,30,30)
 green = (34,155,0)
 light_green = (0,255,0)
 blue = (0,0,155)
+light_blue = (173, 216, 230)
+tint_blue = (162, 172, 182)
 
 yellow = (200, 175, 0)
 light_yellow = (254, 254,0)
@@ -70,11 +73,25 @@ wbishop= pygame.image.load(piecesfolder + 'wbishop.png')
 wknight = pygame.image.load(piecesfolder + 'wknight.png')
 wrook = pygame.image.load(piecesfolder + 'wrook.png')
 
-turn = "W"
 selected = ""
 movevalidity = False
 
-def gameIntro():
+#API
+
+gamestate = {
+    "vsAI" : False,
+    "AIColor": "B",
+    "gameID" : "",
+    "player": {
+        "black": "Human",
+        "white": "Human"
+    },
+    "turn": "W",
+    "moveRecord": []
+}
+
+
+def gameIntro(gamestate):
     backgroundimg = ImageSprite(0 , 0, os.getcwd()+ '/img/other/chesspixelimg.png')
     chesstext = ImageSprite( 120, 75, os.getcwd()+ '/img/other/chessfont.png')
     introsprites = pygame.sprite.Group()
@@ -90,19 +107,27 @@ def gameIntro():
                 if event.type == pygame.KEYDOWN :
                     if event.key == pygame.K_q:
                         pygame.quit()
-                        quit()
+                        sys.exit() #this is a better way of quitting a program than quit(). (library always exists)
                     elif event.key == pygame.K_c:
                         intro = False
                 if event.type == pygame.QUIT :
-                    pygame.quit
-                    quit() 
+                    pygame.quit()
+                    sys.exit() #this is a better way of quitting a program than quit(). (library always exists)
 
-        button("Start", (display_width/4-button_width/2), (5*display_height/6), button_width, button_height, light_green, green, "Play")
-        button("Quit",(display_width*3/4-button_width/2), (5*display_height/6),button_width, button_height, light_red, red, "Quit")
+        button("Start", (display_width/4-button_width/2), (4*display_height/6), button_width, button_height, light_green, green, "Play", gamestate)
+
+        modeTxt = "Player vs AI" if gamestate.get('vsAI') else "Local Mutiplayer"
+        button(modeTxt, (display_width/4-button_width/2), (4.8*display_height/6), button_width, button_height/2, light_yellow, yellow, "ToggleAI", gamestate)
+        button("Quit",(display_width*3/4-button_width/2), (4*display_height/6),button_width, button_height, light_red, red, "Quit", gamestate)
+
+        if gamestate.get("vsAI"):
+            button(gamestate.get("AIColor"), ((display_width/4)-button_width/2), (5*display_height/6), button_width/2, button_height/2, light_blue, tint_blue, "ToggleAIColor", gamestate)
+
         pygame.display.update()
         clock.tick(5)
+    return gamestate
         
-def pause():
+def pause(gamestate):
     paused = True
     message_to_screen("Paused", black, -100, "large")
     message_to_screen("Press C to continue or Q to quit ", black, -30)
@@ -112,16 +137,23 @@ def pause():
             if event.type == pygame.KEYDOWN :
                 if event.key == pygame.K_q:
                     pygame.quit()
-                    quit()
+                    sys.exit() #this is a better way of quitting a program than quit(). (library always exists)
                 elif event.key == pygame.K_c:
                     paused = False
             if event.type == pygame.QUIT :
-                pygame.quit
-                quit()
+                pygame.quit()
+                sys.exit() #this is a better way of quitting a program than quit(). (library always exists)
         
 
         clock.tick(10)
+    return gamestate
 
+def toggleTurn(gamestate):
+    if gamestate.get("turn") == "W":
+        gamestate.update({"turn" : "B"})
+    elif gamestate.get("turn") == "B":
+        gamestate.update({"turn": "W"})
+    return gamestate
 
 def turndisplay(turn):
     if turn == "W":
@@ -152,26 +184,35 @@ def message_to_screen(msg, color,y_displace =0, size = "small"):
     textRect.center = (display_width/2), (display_height/2) + y_displace
     gameDisplay.blit(textSurf,textRect)
     
-def button(msg, x, y, width, height, activecolor, inactivecolor, action = None):
+def button(msg, x, y, width, height, activecolor, inactivecolor, action , gamestate):
     cur = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
     if x+width > cur[0] > x and y+height >cur[1]> y:
             pygame.draw.rect(gameDisplay, activecolor, (x,y, width,height))
             if click[0] == 1:
+                if action == "ToggleAI":
+                    gamestate.update({"vsAI": not (gamestate.get("vsAI")) })
+
+                    print(" toggled AI. state now equals " + str(gamestate.get("vsAI")))
+
                 if action == "Play":
-                    gameID = print(requests.get("http://chess-api-chess.herokuapp.com/api/v1/chess/one"))      
-                    gameLoop()
+                    if (gamestate.get("vsAI")): gamestate.update({'gameID' : createGame()})
+                    print("ID= " + gamestate.get("gameID"))
+                    gameLoop(gamestate)
                 if action == "Quit":
-                    pygame.quit
-                    quit()
+                    pygame.quit()
+                    sys.exit()
+                if action == "ToggleAIColor":
+                    gamestate.update({'AIColor': oppColor(gamestate.get('AIColor'))})
+                    print("AI is playing " +gamestate.get('AIColor'))
     else:
         pygame.draw.rect(gameDisplay, inactivecolor, (x,y, width,height))
 
     text_to_button(msg, x,y,width,height)
+    return gamestate
 
-def square(coordinates , x, y, width, height, activecolor, inactivecolor):
+def square(coordinates , x, y, width, height, activecolor, inactivecolor, gamestate):
     global selected
-    global turn
 
     cur = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
@@ -182,7 +223,7 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
         if click[0] == 1:
             for piece in piecedict:
                 if piece.iD == board['%s' %(coordinates)].pieceID:
-                    if piece.color == turn:
+                    if piece.color == gamestate.get("turn"):
                         selected = coordinates
 
                         print("Selected %s" %(coordinates))
@@ -194,14 +235,14 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
                     piece.moveTo('%s' %(destinationselect))
                
             for piece in piecedict:
-                if piece.movevalidity == True:
+                if piece.movevalidity == True and selected !="":
+
+                    if gamestate['vsAI'] == True:
+                        movePiece(selected, destinationselect, gamestate['gameID'])
                     
-                    if turn == "W":
-                        turn = "B"
-                        piece.hasmoved = True
-                    elif turn == "B":
-                        turn = "W"
-                        piece.hasmoved = True
+                    toggleTurn(gamestate)
+
+                    piece.hasmoved = True
                     
                     selected = ""
                     piece.movevalidity = False
@@ -261,15 +302,13 @@ def square(coordinates , x, y, width, height, activecolor, inactivecolor):
                     gameDisplay.blit(brook,(x,y))
                 else:
                     gameDisplay.blit(wrook, (x,y))
+    return gamestate
 
-
-def gameLoop():
+def gameLoop(gamestate):
 
     selected= ""
     gameExit= False
     gameOver= False
-
-
     while not gameExit:
         
 
@@ -285,11 +324,11 @@ def gameLoop():
                         gameOver = False
                         gameExit = True
                     elif event.key == pygame.K_c:
-                        wkk.mated= False
                         bkk.mated= False 
+                        wkk.mated= False
                         initBoard()
                         scoutAll()
-                        gameIntro()
+                        gameIntro(gamestate)
                 if event.type == pygame.QUIT :
                     gameOver = False
                     gameExit = True
@@ -304,6 +343,16 @@ def gameLoop():
         if bkk.mated== True or wkk.mated == True:
             gameOver=True
         gameDisplay.fill(blue)
+
+        #make an AI move if it is the AIs turn it is not a gameover condition
+        if gamestate.get('vsAI') and (gamestate.get('turn') == gamestate.get('AIColor')) and (checkGameover(gamestate.get('gameID')) == 'game continues'):
+            print(gamestate.get('gameID'))
+            currentGrid, targetGrid = moveAI(gamestate.get('gameID'))
+
+            aiselected = getPieceByGrid(piecedict, currentGrid)
+            print("AI Selected " + aiselected.type)
+            aiselected.moveTo(targetGrid.upper())
+            toggleTurn(gamestate)
 
         #big messy block for drawing each square on the chessboard
         i=1
@@ -326,18 +375,19 @@ def gameLoop():
                         tilecolor = white
                         activetilecolor = light_grey
              
-                square(coordstoGrid(str(i),str(j)), border+(tile_size*(i-1)), border+7*tile_size -(tile_size*(j-1)), tile_size,tile_size, activetilecolor, tilecolor)      
+                square(coordstoGrid(str(i),str(j)), border+(tile_size*(i-1)), border+7*tile_size -(tile_size*(j-1)), tile_size,tile_size, activetilecolor, tilecolor, gamestate)      
                 j += 1
             i += 1
         
-        turndisplay(turn)
+        turndisplay(gamestate.get("turn"))
         pygame.display.update()
 
         clock.tick(FPS)
+    return gamestate
 
-gameIntro()
+gameIntro(gamestate)
 
 #gameLoop()
 
-pygame.quit
-quit()
+pygame.quit()
+sys.exit()

@@ -217,7 +217,7 @@ def checkIfStalemated(king, allpossmoves):
         return False
 
 def restrictMovesDueToCheck(king):
-    print("%s King in Check") %king.color
+    print(king.color + " King in Check")
     king.check= True
     dc =[] # direct check
     checkers= 0

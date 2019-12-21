@@ -31,13 +31,8 @@ def gridtoCoords(grid):
     return pos
 
 def addIntArrays(arr1,arr2):
-    if len(arr1) != len(arr2):
-        return
-    else:
-        addedArray = []
-        for x in range(len(arr1)):
-            addedArray.append(int(arr1[x] + arr2[x]))
-        return addedArray
+    result = map(lambda n1, n2: int(n1+n2), arr1, arr2)
+    return list(result)
 
 def subtractIntArrays(arr1,arr2):
     if len(arr1) != len(arr2):
@@ -48,3 +43,15 @@ def subtractIntArrays(arr1,arr2):
             subtractedArray.append(int(arr1[x] - arr2[x]))
         return subtractedArray
 
+def oppColor(color):
+    if color == "W":
+        return "B"
+    if color == "B":
+        return "W"
+
+def getPieceByGrid(pieces, grid):
+    print(grid)
+    for piece in pieces:
+        if piece.grid != "Taken":
+            if piece.getGrid() == grid.upper():
+                return piece
